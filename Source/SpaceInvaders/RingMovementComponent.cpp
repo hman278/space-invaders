@@ -2,6 +2,7 @@
 
 #include "RingMovementComponent.h"
 #include "Components/SplineComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Ring.h"
 
 // Sets default values for this component's properties
@@ -28,15 +29,42 @@ void URingMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
+	if (bCachedUseSmoothMovement)
+	{
+		MoveToPointOnRingLoop();
+	}
 }
 
-void URingMovementComponent::MoveToPointOnRing(ARing *Ring, const FVector &Point, bool bFaceOutside)
+void URingMovementComponent::MoveToPointOnRing(ARing *Ring, FVector Point, bool bFaceOutside, bool bUseSmoothMovement)
 {
-	FTransform NewTransform =
-		Ring->GetSplineComponent()->FindTransformClosestToWorldLocation(Point, ESplineCoordinateSpace::Local, false);
+	if (Ring)
+	{
+		bCachedUseSmoothMovement = bUseSmoothMovement;
 
-	// Make the actor face outside direction
-	NewTransform.SetRotation(
-		NewTransform.GetRotation() * FQuat::MakeFromEuler(FVector(0.f, 0.f, bFaceOutside ? -90.f : 90.f)));
-	GetOwner()->SetActorTransform(NewTransform);
+		FTransform NewTransform =
+			Ring->GetSplineComponent()->FindTransformClosestToWorldLocation(Point, ESplineCoordinateSpace::Local, false);
+
+		// Make the actor face outside direction
+		NewTransform.SetRotation(
+			NewTransform.GetRotation() * FQuat::MakeFromEuler(FVector(0.f, 0.f, bFaceOutside ? -90.f : 90.f)));
+
+		CachedNewTransform = NewTransform;
+
+		// If not using smooth movement we are just setting and caching the current transform to be interpolated
+		// with the cached transform in the tick event
+		if (!bUseSmoothMovement)
+		{
+			GetOwner()->SetActorTransform(NewTransform);
+		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1, 10.f, FColor::Red, FString::Printf(TEXT("Error: Ring was not specified for the actor: %s"), *GetOwner()->GetFName().ToString()));
+	}
+}
+
+void URingMovementComponent::MoveToPointOnRingLoop()
+{
+	GetOwner()->SetActorTransform(UKismetMathLibrary::TInterpTo(GetOwner()->GetActorTransform(), CachedNewTransform, GetWorld()->GetDeltaSeconds(), 3.f));
 }

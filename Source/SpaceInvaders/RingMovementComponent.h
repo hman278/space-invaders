@@ -26,5 +26,12 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable, Category = RingMovementComponent)
-	void MoveToPointOnRing(ARing *Ring, const FVector &Point, bool bFaceOutside);
+	void MoveToPointOnRing(ARing *Ring, FVector Point, bool bFaceOutside, bool bUseSmoothMovement);
+
+private:
+	void MoveToPointOnRingLoop();
+
+private:
+	bool bCachedUseSmoothMovement;
+	FTransform CachedNewTransform;
 };
