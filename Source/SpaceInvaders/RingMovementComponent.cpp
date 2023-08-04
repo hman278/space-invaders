@@ -64,7 +64,36 @@ void URingMovementComponent::MoveToPointOnRing(ARing *Ring, FVector Point, bool 
 	}
 }
 
+void URingMovementComponent::MoveToDistanceOnRing(ARing *Ring, float Distance, bool bFaceOutside, bool bUseSmoothMovement)
+{
+	if (Ring)
+	{
+		bCachedUseSmoothMovement = bUseSmoothMovement;
+
+		FTransform NewTransform =
+			Ring->GetSplineComponent()->GetTransformAtDistanceAlongSpline(Distance, ESplineCoordinateSpace::Local, false);
+
+		// Make the actor face outside direction
+		NewTransform.SetRotation(
+			NewTransform.GetRotation() * FQuat::MakeFromEuler(FVector(0.f, 0.f, bFaceOutside ? -90.f : 90.f)));
+
+		CachedNewTransform = NewTransform;
+
+		// If not using smooth movement we are just setting and caching the current transform to be interpolated
+		// with the cached transform in the tick event
+		if (!bUseSmoothMovement)
+		{
+			GetOwner()->SetActorTransform(NewTransform);
+		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1, 10.f, FColor::Red, FString::Printf(TEXT("Error: Ring was not specified for the actor: %s"), *GetOwner()->GetFName().ToString()));
+	}
+}
+
 void URingMovementComponent::MoveToPointOnRingLoop()
 {
-	GetOwner()->SetActorTransform(UKismetMathLibrary::TInterpTo(GetOwner()->GetActorTransform(), CachedNewTransform, GetWorld()->GetDeltaSeconds(), 3.f));
+	GetOwner()->SetActorTransform(UKismetMathLibrary::TInterpTo(GetOwner()->GetActorTransform(), CachedNewTransform, GetWorld()->GetDeltaSeconds(), 4.f));
 }

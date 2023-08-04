@@ -28,6 +28,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = RingMovementComponent)
 	void MoveToPointOnRing(ARing *Ring, FVector Point, bool bFaceOutside, bool bUseSmoothMovement);
 
+	UFUNCTION(BlueprintCallable, Category = RingMovementComponent)
+	void MoveToDistanceOnRing(ARing *Ring, float Distance, bool bFaceOutside, bool bUseSmoothMovement);
+
 private:
 	void MoveToPointOnRingLoop();
 
